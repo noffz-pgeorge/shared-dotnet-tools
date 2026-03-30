@@ -382,6 +382,13 @@ MSBuild_Logs/
 # AWS SAM Build and Temporary Artifacts folder
 .aws-sam
 
+# NUnit
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+.vs/
+
 # NVidia Nsight GPU debugger configuration file
 *.nvuser
 
@@ -426,3 +433,4 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
