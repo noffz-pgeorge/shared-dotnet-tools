@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Noffz.DeviceDiscovery
 {
-    internal class UsbComFinder
+    public class UsbComFinder
     {
         public static string FindComPort(string vid, string pid, string sn = "")
         {
@@ -39,6 +39,56 @@ namespace Noffz.DeviceDiscovery
 
             return "";
         }
+
+        public static string FindComPortForCompositeDevice(string vid, string pid, string sn = "")
+        {
+            string vidPidPattern = "VID_" + vid + "&PID_" + pid;
+            string query = "SELECT * FROM Win32_PnPEntity WHERE DeviceID LIKE '%" + vidPidPattern + "%'";
+            var allDevices = new ManagementObjectSearcher(query).Get()
+                .Cast<ManagementObject>()
+                .ToList();
+
+            foreach (ManagementObject device in allDevices)
+            {
+                string deviceId = device["DeviceID"]?.ToString() ?? "";
+                string name = device["Name"]?.ToString() ?? "";
+
+                // Skip entries that don't have a COM port
+                var match = Regex.Match(name, @"\(COM\d+\)");
+                if (!match.Success)
+                    continue;
+
+                if (!string.IsNullOrEmpty(sn))
+                {
+                    // Case 1: Simple device — SN is on the same entry as the COM port
+                    // DeviceID: USB\VID_2341&PID_0074\<SN>
+                    string[] parts = deviceId.Split('\\');
+                    string lastSegment = parts.LastOrDefault() ?? "";
+                    if (lastSegment.Equals(sn, StringComparison.OrdinalIgnoreCase))
+                        return match.Value.Trim('(', ')');
+
+                    // Case 2: Composite device — SN is on the parent, COM port is on the MI_ child.
+                    // Find the parent composite entry for this interface and check its SN.
+                    // The interface DeviceID looks like: USB\VID_xxxx&PID_xxxx&MI_00\6&xxx&0&0000
+                    // The parent DeviceID looks like:    USB\VID_xxxx&PID_xxxx\<SN>
+                    if (deviceId.Contains("&MI_"))
+                    {
+                        string parentId = "USB\\VID_" + vid + "&PID_" + pid + "\\" + sn;
+                        bool parentExists = allDevices.Any(d =>
+                            string.Equals(d["DeviceID"]?.ToString(), parentId, StringComparison.OrdinalIgnoreCase));
+                        if (parentExists)
+                            return match.Value.Trim('(', ')');
+                    }
+
+                    continue;
+                }
+
+                return match.Value.Trim('(', ')');
+            }
+
+            return "";
+        }
+
 
         public static string FindComPortByInterface(string vid, string pid, int interfaceIndex, IEnumerable<string> knownPorts)
         {
