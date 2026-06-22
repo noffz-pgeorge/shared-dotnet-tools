@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Noffz.DeviceDiscovery/Noffz.DeviceDiscovery.csproj" Id="bded21d5-de3a-4419-8be4-6481fc4a88ff" />
     <Project Path="src/Noffz.Processes/Noffz.Processes.csproj" Id="ac4b7b04-d7bc-4e9c-b95e-583a4000003e" />
   </Folder>
 </Solution>
